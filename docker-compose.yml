@@ -1,0 +1,10 @@
+# all values can be changed to your liking, provided you know what you are doing
+services:
+  suncdn:
+    build: .
+    container_name: suncdn
+    restart: always
+    ports:
+      - "2003:2003"
+    volumes:
+      - /app/suncdn/:/app/mountpoint/

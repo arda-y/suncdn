@@ -1,0 +1,29 @@
+# Reverse proxied path to the API.
+# Required for Swagger UI at /docs to work properly.
+# Sync with: nginx reverse proxied path
+ROOT_PATH: "/sun" # type: str
+
+CDN_PATH: "/suncdn" # type: str
+
+# The port to run the API server on.
+# Sync with: docker-compose port argument, nginx reverse proxied port
+PORT: 2003 # type: int
+
+# Maximum file size in megabytes.
+MAX_FILE_SIZE: 200 # type: int
+
+# The IP or domain to use when generating the download link.
+# Has no effect on nginx or docker command, but is used in the API message returned.
+# Passing environment variable from docker run command will override this.
+IP_OR_DOMAIN: "https://arda0.net" # type: str
+
+# Max file age in seconds.
+# 3600 = 1 hour, 86400 = 1 day, 604800 = 1 week
+MAX_FILE_AGE: 604800 # type: int
+
+# Sets the allowed domains for CORS requests.
+# If the request is not from one of these domains, it will be rejected.
+# If you want to allow all domains, remove the already present domains and add "*".
+ALLOWED_DOMAINS: # type: list[str]
+#  - "*" # allows all domains, but is not recommended for production
+  - "https://arda0.net"
