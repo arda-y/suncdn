@@ -12,43 +12,57 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        /* Custom scrollbar for history */
+        #history-list::-webkit-scrollbar { width: 4px; }
+        #history-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="text-slate-200 min-h-screen flex items-center justify-center p-4">
 
-    <div class="max-w-lg w-full glass-panel p-8 rounded-2xl shadow-2xl">
-        <header class="mb-10 text-center">
-            <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">SunCDN</h1>
-            <div class="h-1 w-12 bg-blue-500 mx-auto rounded-full"></div>
-            <p class="text-slate-400 mt-4 text-sm font-mono">rushed and simple file hosting solution.</p>
-        </header>
+    <div class="max-w-lg w-full space-y-4">
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl">
+            <header class="mb-10 text-center">
+                <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">SunCDN</h1>
+                <div class="h-1 w-12 bg-blue-500 mx-auto rounded-full"></div>
+                <p class="text-slate-400 mt-4 text-sm font-mono italic">rushed and simple file hosting solution.</p>
+            </header>
 
-        <div id="drop-zone" class="relative group border-2 border-dashed border-slate-600 rounded-xl p-10 transition-all hover:border-blue-500 hover:bg-slate-800/50 cursor-pointer text-center">
-            <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-            
-            <div id="status-ui">
-                <div class="bg-slate-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                    <svg class="h-8 w-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+            <div id="drop-zone" class="relative group border-2 border-dashed border-slate-600 rounded-xl p-10 transition-all hover:border-blue-500 hover:bg-slate-800/50 cursor-pointer text-center">
+                <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                
+                <div id="status-ui">
+                    <div class="bg-slate-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <svg class="h-8 w-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <p class="text-slate-300 font-medium">Drop file or click to browse</p>
                 </div>
-                <p class="text-slate-300 font-medium">Drop file or click to browse</p>
+            </div>
+
+            <div id="result-container" class="mt-8 space-y-3 hidden">
+                <div class="flex justify-between items-end">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">CDN Link Generated</span>
+                    <button onclick="resetUI()" class="text-[10px] text-blue-400 hover:underline font-bold uppercase tracking-tighter">Upload Another</button>
+                </div>
+                <div class="relative group">
+                    <input type="text" id="url-output" readonly 
+                        class="w-full bg-black/40 border border-slate-700 rounded-lg pl-4 pr-24 py-3 text-sm text-blue-300 font-mono focus:outline-none ring-1 ring-inset ring-transparent focus:ring-blue-500/50" />
+                    <button id="copy-btn" onclick="copyToClipboard(document.getElementById('url-output').value, this)" 
+                        class="absolute right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-md text-xs font-bold transition-all active:scale-95">
+                        COPY
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div id="result-container" class="mt-8 space-y-3 hidden">
-            <div class="flex justify-between items-end">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">CDN Link Generated</span>
-                <span class="text-[10px] text-green-500 font-mono animate-pulse">● ONLINE</span>
-            </div>
-            <div class="relative group">
-                <input type="text" id="url-output" readonly 
-                    class="w-full bg-black/40 border border-slate-700 rounded-lg pl-4 pr-24 py-3 text-sm text-blue-300 font-mono focus:outline-none ring-1 ring-inset ring-transparent focus:ring-blue-500/50" />
-                <button id="copy-btn" onclick="copyToClipboard()" 
-                    class="absolute right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-md text-xs font-bold transition-all active:scale-95">
-                    COPY
-                </button>
-            </div>
+        <div id="history-container" class="glass-panel p-4 rounded-xl hidden">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-widest flex justify-between">
+                <span>Upload History</span>
+                <button onclick="clearHistory()" class="hover:text-red-400">Clear</button>
+            </h3>
+            <div id="history-list" class="space-y-2 max-h-40 overflow-y-auto">
+                </div>
         </div>
     </div>
 
@@ -57,7 +71,11 @@
         const resultContainer = document.getElementById('result-container');
         const urlOutput = document.getElementById('url-output');
         const statusUi = document.getElementById('status-ui');
-        const copyBtn = document.getElementById('copy-btn');
+        const historyContainer = document.getElementById('history-container');
+        const historyList = document.getElementById('history-list');
+
+        // Load history on start
+        window.onload = renderHistory;
 
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -66,7 +84,7 @@
             const formData = new FormData();
             formData.append('file', file);
 
-            // UI Loading State
+            const originalStatus = statusUi.innerHTML;
             statusUi.innerHTML = `
                 <div class="flex flex-col items-center">
                     <div class="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
@@ -75,7 +93,6 @@
             `;
 
             try {
-                // Using the specific path provided in your curl example
                 const response = await fetch('/sun/uploadfile/', {
                     method: 'POST',
                     body: formData
@@ -94,24 +111,67 @@
                             <p class="font-bold">Success!</p>
                         </div>
                     `;
+                    saveToHistory(file.name, data.file_location);
                 }
             } catch (error) {
                 console.error('Upload failed:', error);
                 statusUi.innerHTML = '<p class="text-red-400 font-bold">Network Error</p>';
+                setTimeout(() => { statusUi.innerHTML = originalStatus; }, 3000);
             }
         });
 
-        async function copyToClipboard() {
+        function saveToHistory(name, url) {
+            const history = JSON.parse(localStorage.getItem('suncdn_history') || '[]');
+            history.unshift({ name, url, date: new Date().toLocaleTimeString() });
+            localStorage.setItem('suncdn_history', JSON.stringify(history.slice(0, 10))); // Keep last 10
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('suncdn_history') || '[]');
+            if (history.length === 0) {
+                historyContainer.classList.add('hidden');
+                return;
+            }
+            historyContainer.classList.remove('hidden');
+            historyList.innerHTML = history.map(item => `
+                <div class="flex items-center justify-between bg-black/20 p-2 rounded border border-white/5 group">
+                    <div class="flex flex-col truncate pr-4">
+                        <span class="text-[11px] font-mono text-slate-300 truncate">${item.name}</span>
+                        <span class="text-[9px] text-slate-600">${item.date}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="${item.url}" target="_blank" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white transition-colors">VIEW</a>
+                        <button onclick="copyToClipboard('${item.url}', this)" class="text-[10px] bg-blue-900/40 hover:bg-blue-800 px-2 py-1 rounded text-blue-300 transition-colors">COPY</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('suncdn_history');
+            renderHistory();
+        }
+
+        function resetUI() {
+            resultContainer.classList.add('hidden');
+            fileInput.value = '';
+            statusUi.innerHTML = `
+                <div class="bg-slate-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <svg class="h-8 w-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <p class="text-slate-300 font-medium">Drop file or click to browse</p>
+            `;
+        }
+
+        async function copyToClipboard(text, btn) {
             try {
-                await navigator.clipboard.writeText(urlOutput.value);
-                const originalText = copyBtn.innerText;
-                copyBtn.innerText = 'COPIED!';
-                copyBtn.classList.replace('bg-blue-600', 'bg-green-600');
-                
-                setTimeout(() => {
-                    copyBtn.innerText = originalText;
-                    copyBtn.classList.replace('bg-green-600', 'bg-blue-600');
-                }, 2000);
+                await navigator.clipboard.writeText(text);
+                const originalText = btn.innerText;
+                btn.innerText = 'COPIED!';
+                setTimeout(() => { btn.innerText = originalText; }, 1500);
             } catch (err) {
                 console.error('Failed to copy', err);
             }
