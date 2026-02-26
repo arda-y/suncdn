@@ -4,6 +4,7 @@ All API routes for the SunCDN project.
 
 import os
 import random
+import shutil
 from urllib.parse import quote
 
 from fastapi import UploadFile
@@ -48,8 +49,9 @@ async def create_upload_file(file: UploadFile):
 
     file_location = os.path.join(download_path, random_string, file.filename)
 
-    with open(file_location, "wb+") as file_object:
-        file_object.write(file.file.read())
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    file.file.close()
 
     ip_or_domain = config.get("IP_OR_DOMAIN")
     cdn_path = config.get("CDN_PATH")
