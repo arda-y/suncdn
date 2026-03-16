@@ -4,7 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SunCDN | CDN Upload</title>
+
+    <meta property="og:title" content="sun | ephemeral file hosting service">
+    <meta property="og:description" content="simple file hosting. no accounts, 2gb limit, 7 day retention.">
+    <meta property="og:site_name" content="sun">
+    <meta property="og:image" content="https://arda0.net/assets/xp.gif">
+    <meta property="og:url" content="https://arda0.net/sun/">
+
+    <title>sun | ephemeral file hosting service</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -30,12 +37,23 @@
     </style>
 </head>
 
-<body class="text-slate-200 min-h-screen flex items-center justify-center p-4">
+<header class="w-full max-w-2xl mx-auto px-4 py-8 flex justify-between items-end">
+    <div class="flex flex-col gap-1">
+        <a href="https://arda0.net" target="_self"
+            class="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors tracking-[0.2em] uppercase flex items-center gap-2">
+            <span>←</span> back to home
+        </a>
+        <h1 class="text-3xl font-black text-white tracking-tight">
+            sun<span class="text-blue-500">cdn</span>
+        </h1>
+    </div>
+</header>
 
+<main class="text-slate-200 p-4 items-center justify-center flex">
     <div class="max-w-lg w-full space-y-4">
         <div class="glass-panel p-8 rounded-2xl shadow-2xl">
             <header class="mb-10 text-center">
-                <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">SunCDN</h1>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">sun</h1>
                 <div class="h-1 w-12 bg-blue-500 mx-auto rounded-full"></div>
                 <p class="text-slate-400 mt-4 text-sm font-mono italic">rushed and simple file hosting solution.</p>
             </header>
@@ -133,30 +151,55 @@
 
         function saveToHistory(name, url) {
             const history = JSON.parse(localStorage.getItem('suncdn_history') || '[]');
-            history.unshift({ name, url, date: new Date().toLocaleTimeString() });
-            localStorage.setItem('suncdn_history', JSON.stringify(history.slice(0, 10))); // Keep last 10
+            // Add 'timestamp' property
+            history.unshift({
+                name,
+                url,
+                date: new Date().toLocaleTimeString(),
+                timestamp: Date.now()
+            });
+            localStorage.setItem('suncdn_history', JSON.stringify(history.slice(0, 10)));
             renderHistory();
         }
 
         function renderHistory() {
-            const history = JSON.parse(localStorage.getItem('suncdn_history') || '[]');
+            // 1. Fetch the data FIRST
+            let history = JSON.parse(localStorage.getItem('suncdn_history') || '[]');
+
             if (history.length === 0) {
                 historyContainer.classList.add('hidden');
                 return;
             }
+
+            const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            const originalLength = history.length;
+
+            // 2. Filter the data
+            history = history.filter(item => {
+                if (!item.timestamp) return true;
+                return (now - item.timestamp) < oneWeekMs;
+            });
+
+            // 3. Update storage if items were purged
+            if (history.length !== originalLength) {
+                localStorage.setItem('suncdn_history', JSON.stringify(history));
+            }
+
+            // 4. Render to UI
             historyContainer.classList.remove('hidden');
             historyList.innerHTML = history.map(item => `
-                <div class="flex items-center justify-between bg-black/20 p-2 rounded border border-white/5 group">
-                    <div class="flex flex-col truncate pr-4">
-                        <span class="text-[11px] font-mono text-slate-300 truncate">${item.name}</span>
-                        <span class="text-[9px] text-slate-600">${item.date}</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <a href="${item.url}" target="_blank" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white transition-colors">VIEW</a>
-                        <button onclick="copyToClipboard('${item.url}', this)" class="text-[10px] bg-blue-900/40 hover:bg-blue-800 px-2 py-1 rounded text-blue-300 transition-colors">COPY</button>
-                    </div>
-                </div>
-            `).join('');
+        <div class="flex items-center justify-between bg-black/20 p-2 rounded border border-white/5 group">
+            <div class="flex flex-col truncate pr-4">
+                <span class="text-[11px] font-mono text-slate-300 truncate">${item.name}</span>
+                <span class="text-[9px] text-slate-600">${item.date}</span>
+            </div>
+            <div class="flex gap-2">
+                <a href="${item.url}" target="_blank" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white transition-colors">VIEW</a>
+                <button onclick="copyToClipboard('${item.url}', this)" class="text-[10px] bg-blue-900/40 hover:bg-blue-800 px-2 py-1 rounded text-blue-300 transition-colors">COPY</button>
+            </div>
+        </div>
+        `).join('');
         }
 
         function clearHistory() {
@@ -183,6 +226,6 @@
             }
         }
     </script>
-</body>
+</main>
 
 </html>
