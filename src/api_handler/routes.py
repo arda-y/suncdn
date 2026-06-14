@@ -7,7 +7,8 @@ import random
 import shutil
 from urllib.parse import quote
 
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException
+from fastapi import status
 from fastapi.responses import FileResponse
 
 import config
@@ -47,7 +48,15 @@ async def create_upload_file(file: UploadFile):
     if not os.path.exists(os.path.join(download_path, random_string)):
         os.makedirs(os.path.join(download_path, random_string))
 
-    file_location = os.path.join(download_path, random_string, file.filename)
+    # Prevent path traversal via uploaded filename
+    # Use basename to strip any path components, then remove any remaining separators
+    raw_filename = file.filename or ""
+    safe_name = os.path.basename(raw_filename)
+    safe_name = safe_name.replace("/", "").replace("\\", "")
+    if not safe_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename")
+
+    file_location = os.path.join(download_path, random_string, safe_name)
 
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -57,5 +66,5 @@ async def create_upload_file(file: UploadFile):
     cdn_path = config.get("CDN_PATH")
 
     return {
-        "file_location": f"{ip_or_domain}{quote(cdn_path)}/{quote(random_string)}/{quote(file.filename)}"
+        "file_location": f"{ip_or_domain}{quote(cdn_path)}/{quote(random_string)}/{quote(safe_name)}"
     }
