@@ -52,7 +52,7 @@ async def create_upload_file(file: UploadFile):
     # Use basename to strip any path components, then remove any remaining separators
     raw_filename = file.filename or ""
     safe_name = os.path.basename(raw_filename)
-    safe_name = safe_name.replace("/", "").replace("\\", "")
+    safe_name = safe_name.replace("/", "").replace("\\", "").replace("..", ".")
     if not safe_name:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename")
 
