@@ -1,3 +1,5 @@
+LOG_LEVEL: "info" # type: str
+
 # Reverse proxied path to the API.
 # Required for Swagger UI at /docs to work properly.
 # Sync with: nginx reverse proxied path
