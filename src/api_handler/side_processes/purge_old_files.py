@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 import config
+from src.api_handler import quota
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -28,6 +29,11 @@ async def purge_old_files():
         except Exception:
             # Never let one bad iteration kill the background task permanently
             logger.exception("Error while purging old files")
+
+        try:
+            quota.prune_old_records()
+        except Exception:
+            logger.exception("Error while pruning old quota records")
 
         await asyncio.sleep(CHECK_INTERVAL_SECONDS)
 

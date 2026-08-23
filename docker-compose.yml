@@ -5,6 +5,6 @@ services:
     container_name: suncdn
     restart: always
     ports:
-      - "2003:2003"
+      - "127.0.0.1:2003:2003"
     volumes:
       - /app/suncdn/:/app/mountpoint/

@@ -8,14 +8,16 @@
     <meta property="og:title" content="sun | ephemeral file hosting service">
     <meta property="og:description" content="simple file hosting. no accounts, 1gb limit, 7 day retention.">
     <meta property="og:site_name" content="sun">
-    <meta property="og:image" content="https://arda0.net/assets/xp.gif">
+    <meta property="og:image" content="https://arda0.net/assets/favicon">
     <meta property="og:url" content="https://arda0.net/sun/">
+    <link rel="icon" href="/assets/favicon">
 
     <title>sun | ephemeral file hosting service</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://arda0.net/assets/tailwind.min.js"></script>
     <style>
         body {
             background-color: #0f172a;
+            color: #e2e8f0;
         }
 
         /* Slate 900 */
@@ -44,18 +46,26 @@
             <span>←</span> back to home
         </a>
         <h1 class="text-3xl font-black text-white tracking-tight">
-            sun<span class="text-blue-500">cdn</span>
+            sun
         </h1>
     </div>
+    <a href="/sun/faq" target="_self"
+        class="text-xs font-bold text-slate-500 hover:text-blue-400 transition-colors tracking-[0.15em] uppercase px-3 py-1.5">
+        FAQ
+    </a>
 </header>
 
-<main class="text-slate-200 p-4 items-center justify-center flex">
+<div class="max-w-2xl mx-auto px-4 mb-8">
+    <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-800 to-transparent"></div>
+</div>
+
+<main class="p-4 items-center justify-center flex">
     <div class="max-w-lg w-full space-y-4">
         <div class="glass-panel p-8 rounded-2xl shadow-2xl">
-            <header class="mb-10 text-center">
+            <header class="mb-8 text-center">
                 <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">sun</h1>
                 <div class="h-1 w-12 bg-blue-500 mx-auto rounded-full"></div>
-                <p class="text-slate-400 mt-4 text-sm font-mono italic">rushed and simple file hosting solution.</p>
+                <p class="text-slate-400 mt-4 text-sm font-mono italic">simple file hosting. no accounts, 2gb per file, 7 day retention.</p>
             </header>
 
             <div id="drop-zone"
@@ -188,18 +198,47 @@
 
             // 4. Render to UI
             historyContainer.classList.remove('hidden');
-            historyList.innerHTML = history.map(item => `
-        <div class="flex items-center justify-between bg-black/20 p-2 rounded border border-white/5 group">
-            <div class="flex flex-col truncate pr-4">
-                <span class="text-[11px] font-mono text-slate-300 truncate">${item.name}</span>
-                <span class="text-[9px] text-slate-600">${item.date}</span>
-            </div>
-            <div class="flex gap-2">
-                <a href="${item.url}" target="_blank" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white transition-colors">VIEW</a>
-                <button onclick="copyToClipboard('${item.url}', this)" class="text-[10px] bg-blue-900/40 hover:bg-blue-800 px-2 py-1 rounded text-blue-300 transition-colors">COPY</button>
-            </div>
-        </div>
-        `).join('');
+
+            // Built with DOM APIs (not innerHTML + string interpolation) on purpose:
+            // item.name is the uploaded file's own filename, which is not under
+            // our control. textContent and property assignment (a.href) never
+            // parse their input as markup, so a crafted filename cannot inject
+            // HTML/script here.
+            historyList.replaceChildren(...history.map(item => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-black/20 p-2 rounded border border-white/5 group';
+
+                const textWrap = document.createElement('div');
+                textWrap.className = 'flex flex-col truncate pr-4';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'text-[11px] font-mono text-slate-300 truncate';
+                nameSpan.textContent = item.name;
+
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'text-[9px] text-slate-600';
+                dateSpan.textContent = item.date;
+
+                textWrap.append(nameSpan, dateSpan);
+
+                const right = document.createElement('div');
+                right.className = 'flex gap-2';
+
+                const viewLink = document.createElement('a');
+                viewLink.href = item.url;
+                viewLink.target = '_blank';
+                viewLink.className = 'text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white transition-colors';
+                viewLink.textContent = 'VIEW';
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'text-[10px] bg-blue-900/40 hover:bg-blue-800 px-2 py-1 rounded text-blue-300 transition-colors';
+                copyBtn.textContent = 'COPY';
+                copyBtn.addEventListener('click', () => copyToClipboard(item.url, copyBtn));
+
+                right.append(viewLink, copyBtn);
+                row.append(textWrap, right);
+                return row;
+            }));
         }
 
         function clearHistory() {

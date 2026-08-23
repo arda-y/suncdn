@@ -11,8 +11,9 @@ CDN_PATH: "/suncdn" # type: str
 # Sync with: docker-compose port argument, nginx reverse proxied port
 PORT: 2003 # type: int
 
-# Maximum file size in megabytes.
-MAX_FILE_SIZE: 200 # type: int
+# Maximum size for a single file, in megabytes.
+# Sync with: nginx client_max_body_size for the /sun/ location
+MAX_FILE_SIZE: 2048 # type: int, 2GB
 
 # The IP or domain to use when generating the download link.
 # Has no effect on nginx or docker command, but is used in the API message returned.
@@ -29,3 +30,18 @@ MAX_FILE_AGE: 604800 # type: int
 ALLOWED_DOMAINS: # type: list[str]
 #  - "*" # allows all domains, but is not recommended for production
   - "https://arda0.net"
+
+# Trusted reverse proxy peers allowed to set X-Real-IP / X-Forwarded-For.
+# Requests from any other peer have those headers ignored (anti-spoofing).
+# Note: nginx runs on the host and reaches this container through Docker's
+# published-port path, so the peer address seen here is the bridge network's
+# gateway IP (docker inspect <container> -> NetworkSettings.Networks.*.Gateway),
+# not 127.0.0.1. Keeping both covers direct (non-Docker) runs too.
+TRUSTED_PROXIES: # type: list[str]
+  - "127.0.0.1"
+  - "172.21.0.1"
+
+# Per-IP upload quotas, in megabytes.
+HOURLY_UPLOAD_LIMIT_MB: 2048 # type: int, 2GB/hour
+DAILY_UPLOAD_LIMIT_MB: 5120 # type: int, 5GB/day
+WEEKLY_UPLOAD_LIMIT_MB: 10240 # type: int, 10GB/week
