@@ -52,17 +52,22 @@
             <div class="h-1 w-12 bg-blue-500 mx-auto rounded-full"></div>
         </header>
 
-        <div class="glass-panel p-6 rounded-2xl shadow-2xl space-y-2">
-            <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">How long does sun keep my file?</h3>
-            <p class="text-slate-300 text-sm leading-relaxed">
+        <div id="faq-list" class="space-y-4"></div>
+    </div>
+</main>
+
+<script>
+    const faqs = [
+        {
+            q: 'How long does sun keep my file?',
+            a: `<p class="text-slate-300 text-sm leading-relaxed">
                 sun keeps your file for 7 days. After 7 days, sun deletes the file. sun does not warn you before
                 deletion. Save a copy if you need the file for longer.
-            </p>
-        </div>
-
-        <div class="glass-panel p-6 rounded-2xl shadow-2xl space-y-2">
-            <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">What are the upload limits?</h3>
-            <p class="text-slate-300 text-sm leading-relaxed">
+            </p>`,
+        },
+        {
+            q: 'What are the upload limits?',
+            a: `<p class="text-slate-300 text-sm leading-relaxed">
                 A single file cannot be larger than 2GB. Per IP address, sun also applies three rolling limits:
             </p>
             <ul class="text-slate-300 text-sm leading-relaxed list-disc list-inside space-y-1 font-mono">
@@ -73,28 +78,52 @@
             <p class="text-slate-400 text-xs leading-relaxed pt-1">
                 If you go over a limit, sun rejects the upload with an error. Wait for the limit to reset, then try
                 again.
-            </p>
-        </div>
-
-        <div class="glass-panel p-6 rounded-2xl shadow-2xl space-y-2">
-            <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">What data does sun collect?</h3>
-            <p class="text-slate-300 text-sm leading-relaxed">
+            </p>`,
+        },
+        {
+            q: 'What data does sun collect?',
+            a: `<p class="text-slate-300 text-sm leading-relaxed">
                 sun records your IP address for each upload. sun uses this to enforce the upload limits above.
             </p>
             <p class="text-slate-300 text-sm leading-relaxed">
                 sun does not require an account. sun does not collect your name or email. sun does not link your IP
                 address to a profile.
             </p>
-        </div>
-
-        <div class="glass-panel p-6 rounded-2xl shadow-2xl space-y-2">
-            <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">How do I report abuse?</h3>
+            <p class="text-slate-300 text-sm leading-relaxed">
+                sun does not keep your IP address forever. Once its cooldown passes, sun removes it. sun never
+                links your IP address to the file you uploaded, so there is no way to tie an uploaded file back
+                to the person who uploaded it.
+            </p>`,
+        },
+        {
+            q: 'How do I report abuse?',
+            a: `<p class="text-slate-300 text-sm leading-relaxed">
+                sun has no way of detecting abusive behavior automatically, because sun is fully anonymous.
+            </p>
             <p class="text-slate-300 text-sm leading-relaxed">
                 To report a file, contact
                 <a href="mailto:me@arda0.net" class="text-blue-400 hover:text-blue-300 transition-colors">me@arda0.net</a>.
-            </p>
-        </div>
-    </div>
-</main>
+                We will do our best to comply manually.
+            </p>`,
+        },
+    ];
+
+    const faqList = document.getElementById('faq-list');
+
+    // faqs is a fixed, hardcoded array above (not user input), so building the
+    // answer body via innerHTML here is safe.
+    faqs.forEach(f => {
+        const card = document.createElement('div');
+        card.className = 'glass-panel p-6 rounded-2xl shadow-2xl space-y-2';
+
+        const h3 = document.createElement('h3');
+        h3.className = 'text-[10px] font-bold text-blue-400 uppercase tracking-widest';
+        h3.textContent = f.q;
+
+        card.appendChild(h3);
+        card.insertAdjacentHTML('beforeend', f.a);
+        faqList.appendChild(card);
+    });
+</script>
 
 </html>

@@ -86,9 +86,23 @@ def record_upload(ip: str, size_bytes: int) -> None:
         session.commit()
 
 
+ANONYMIZED_IP = "0.0.0.0"
+
+
 def prune_old_records(older_than_seconds: float = WEEK_SECONDS) -> None:
-    """Drop rows no longer needed for any quota window (older than the widest window)."""
+    """
+    Scrub the IP on rows past the widest quota window, but keep the row.
+
+    Rows this old are already excluded from every quota check (hourly/daily/
+    weekly windows all look back at most WEEK_SECONDS), so blanking the ip
+    here has no effect on quota enforcement - it only satisfies "we don't
+    keep your IP forever" while preserving upload history (bytes, timestamp)
+    so past job volume is still visible later.
+    """
     cutoff = time.time() - older_than_seconds
     with Session() as session:
-        session.query(UploadRecord).filter(UploadRecord.timestamp < cutoff).delete()
+        session.query(UploadRecord).filter(
+            UploadRecord.timestamp < cutoff,
+            UploadRecord.ip != ANONYMIZED_IP,
+        ).update({UploadRecord.ip: ANONYMIZED_IP}, synchronize_session=False)
         session.commit()
