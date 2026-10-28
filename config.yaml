@@ -12,13 +12,18 @@ CDN_PATH: "/suncdn" # type: str
 PORT: 2003 # type: int
 
 # Maximum size for a single file, in megabytes.
-# Sync with: nginx client_max_body_size for the /sun/ location
-MAX_FILE_SIZE: 2048 # type: int, 2GB
+# Sync with: nginx client_max_body_size for the /sun/ location (arda0.net)
+# and the /sun/uploadfile/ location (cdn.arda0.net)
+MAX_FILE_SIZE: 1536 # type: int, 1.5GB
 
 # The IP or domain to use when generating the download link.
 # Has no effect on nginx or docker command, but is used in the API message returned.
 # Passing environment variable from docker run command will override this.
-IP_OR_DOMAIN: "https://arda0.net" # type: str
+IP_OR_DOMAIN: "https://cdn.arda0.net" # type: str
+
+# Base URL (including the ROOT_PATH) for the delete links returned with each upload.
+# cdn.arda0.net is DNS-only (no Cloudflare bot challenge), so scripts can call delete links.
+DELETE_BASE_URL: "https://cdn.arda0.net/sun" # type: str
 
 # Max file age in seconds.
 # 3600 = 1 hour, 86400 = 1 day, 604800 = 1 week

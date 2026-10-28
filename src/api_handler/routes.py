@@ -4,24 +4,26 @@ All API routes for the SunCDN project.
 
 import logging
 import os
-import uuid
+import secrets
 from pathlib import Path
 from urllib.parse import quote
 
 import aiofiles
 from fastapi import Request, UploadFile, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 import config
 from src.api_handler.app import app
 from src.api_handler.client_ip import get_client_ip
-from src.api_handler import quota
+from src.api_handler import delete_links, quota
 
 __all__ = [
     "root",
     "home",
     "faq",
     "create_upload_file",
+    "delete_page",
+    "delete_upload_file",
 ]  # explicitly define the routes that should be registered to the FastAPI app
 
 logger = logging.getLogger("uvicorn.error")
@@ -93,7 +95,7 @@ async def create_upload_file(request: Request, file: UploadFile):
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=reason
                 )
 
-    upload_id = uuid.uuid4().hex
+    upload_id = "".join(secrets.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
     upload_dir = DOWNLOAD_ROOT / upload_id
     upload_dir.mkdir(parents=True, exist_ok=True)
 
@@ -155,6 +157,56 @@ async def create_upload_file(request: Request, file: UploadFile):
     ip_or_domain = config.get("IP_OR_DOMAIN")
     cdn_path = config.get("CDN_PATH")
 
+    delete_token = delete_links.issue_token(upload_id)
+    delete_base = config.get("DELETE_BASE_URL", "https://arda0.net/sun")
+
     return {
-        "file_location": f"{ip_or_domain}{quote(cdn_path)}/{quote(upload_id)}/{quote(safe_name)}"
+        "file_location": f"{ip_or_domain}{quote(cdn_path)}/{quote(upload_id)}/{quote(safe_name)}",
+        "delete_location": f"{delete_base}/delete/{upload_id}/{delete_token}",
     }
+
+
+_DELETE_PAGE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Delete file</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;
+min-height:100vh;align-items:center;justify-content:center;margin:0;padding:16px}
+.box{max-width:420px;text-align:center}
+button{background:#dc2626;color:#fff;border:0;border-radius:8px;padding:12px 24px;
+font-size:16px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5}
+</style></head><body><div class="box">
+<h1>Delete this file?</h1>
+<p>This removes the uploaded file from the CDN right now. It cannot be undone.</p>
+<button id="b">Delete file</button>
+<p id="m"></p></div>
+<script>
+document.getElementById('b').addEventListener('click', async (e) => {
+  e.target.disabled = true;
+  const r = await fetch(location.pathname, {method: 'DELETE'});
+  document.getElementById('m').textContent =
+    r.ok ? 'Deleted.' : 'Link is not valid (already deleted or expired).';
+  if (r.ok) e.target.remove(); else e.target.disabled = false;
+});
+</script></body></html>"""
+
+_NO_LEAK = {"Referrer-Policy": "no-referrer", "Cache-Control": "no-store"}
+
+
+@app.get("/delete/{upload_id}/{token}", response_class=HTMLResponse)
+async def delete_page(upload_id: str, token: str):
+    """Confirm page only - a GET never deletes (link previews/prefetchers must be harmless)."""
+    if not delete_links.token_matches(upload_id, token):
+        raise HTTPException(status_code=404, detail="Not found")
+    return HTMLResponse(_DELETE_PAGE, headers=_NO_LEAK)
+
+
+@app.delete("/delete/{upload_id}/{token}")
+async def delete_upload_file(upload_id: str, token: str):
+    """Deletes the upload. Wrong id and wrong token both give the same 404."""
+    if not delete_links.delete_upload(upload_id, token):
+        raise HTTPException(status_code=404, detail="Not found")
+    return JSONResponse({"ok": True}, headers=_NO_LEAK)

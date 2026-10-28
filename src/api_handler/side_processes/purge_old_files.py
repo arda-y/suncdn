@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 import config
-from src.api_handler import quota
+from src.api_handler import delete_links, quota
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -29,6 +29,11 @@ async def purge_old_files():
         except Exception:
             # Never let one bad iteration kill the background task permanently
             logger.exception("Error while purging old files")
+
+        try:
+            delete_links.drop_orphan_tokens()
+        except Exception:
+            logger.exception("Error while dropping orphan delete tokens")
 
         try:
             quota.prune_old_records()

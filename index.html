@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta property="og:title" content="sun | ephemeral file hosting service">
-    <meta property="og:description" content="simple file hosting. no accounts, 1gb limit, 7 day retention.">
+    <meta property="og:description" content="simple file hosting. no accounts, 1.5gb limit, 7 day retention.">
     <meta property="og:site_name" content="sun">
     <meta property="og:image" content="https://arda0.net/assets/favicon">
     <meta property="og:url" content="https://arda0.net/sun/">
@@ -65,7 +65,7 @@
             <header class="mb-8 text-center">
                 <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">sun</h1>
                 <div class="h-1 w-12 bg-blue-500 mx-auto rounded-full"></div>
-                <p class="text-slate-400 mt-4 text-sm font-mono italic">simple file hosting. no accounts, 2gb per file, 7 day retention.</p>
+                <p class="text-slate-400 mt-4 text-sm font-mono italic">simple file hosting. no accounts, 1.5gb per file, 7 day retention.</p>
             </header>
 
             <div id="drop-zone"
@@ -92,6 +92,19 @@
                         COPY
                     </button>
                 </div>
+                <div class="relative group">
+                    <input type="text" id="delete-output" readonly
+                        class="w-full bg-black/40 border border-slate-700 rounded-lg pl-4 pr-24 py-3 text-xs text-red-300 font-mono focus:outline-none" />
+                    <button onclick="copyToClipboard(document.getElementById('delete-output').value, this)"
+                        class="absolute right-2 top-2 bottom-2 bg-red-700 hover:bg-red-600 text-white px-3 rounded-md text-[10px] font-bold transition-all active:scale-95">
+                        COPY DELETE LINK
+                    </button>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-relaxed">
+                    The red link deletes the file right away (it asks first). Anyone who has it can delete the
+                    file, so keep it private. Without it, sun deletes the file after 7 days. It is also saved in
+                    Upload History below.
+                </p>
             </div>
         </div>
 
@@ -132,7 +145,7 @@
             `;
 
             try {
-                const response = await fetch('/sun/uploadfile/', {
+                const response = await fetch('https://cdn.arda0.net/sun/uploadfile/', {
                     method: 'POST',
                     body: formData
                 });
@@ -141,6 +154,7 @@
 
                 if (data.file_location) {
                     urlOutput.value = data.file_location;
+                    document.getElementById('delete-output').value = data.delete_location || '';
                     resultContainer.classList.remove('hidden');
                     statusUi.innerHTML = `
                         <div class="text-green-400">
@@ -150,7 +164,7 @@
                             <p class="font-bold">Success!</p>
                         </div>
                     `;
-                    saveToHistory(file.name, data.file_location);
+                    saveToHistory(file.name, data.file_location, data.delete_location);
                 }
             } catch (error) {
                 console.error('Upload failed:', error);
@@ -159,12 +173,13 @@
             }
         });
 
-        function saveToHistory(name, url) {
+        function saveToHistory(name, url, deleteUrl) {
             const history = JSON.parse(localStorage.getItem('suncdn_history') || '[]');
             // Add 'timestamp' property
             history.unshift({
                 name,
                 url,
+                deleteUrl: deleteUrl || null,
                 date: new Date().toLocaleTimeString(),
                 timestamp: Date.now()
             });
@@ -206,7 +221,7 @@
             // HTML/script here.
             historyList.replaceChildren(...history.map(item => {
                 const row = document.createElement('div');
-                row.className = 'flex items-center justify-between bg-black/20 p-2 rounded border border-white/5 group';
+                row.className = 'flex flex-col bg-black/20 p-2 rounded border border-white/5 group';
 
                 const textWrap = document.createElement('div');
                 textWrap.className = 'flex flex-col truncate pr-4';
@@ -236,9 +251,75 @@
                 copyBtn.addEventListener('click', () => copyToClipboard(item.url, copyBtn));
 
                 right.append(viewLink, copyBtn);
-                row.append(textWrap, right);
+
+                // Early deletion (only for uploads made after delete links existed).
+                // DEL opens a small panel under the row (in-flow, so the list's
+                // scroll box cannot clip it); "Delete now" sends the DELETE request.
+                let panel = null;
+                if (item.deleteUrl) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'text-[10px] bg-red-900/40 hover:bg-red-800 px-2 py-1 rounded text-red-300 transition-colors';
+                    delBtn.textContent = 'DEL \u25BE';
+
+                    panel = document.createElement('div');
+                    panel.className = 'hidden w-full mt-2 pt-2 border-t border-white/5 flex items-center justify-between gap-2';
+
+                    const ask = document.createElement('span');
+                    ask.className = 'text-[10px] text-slate-400';
+                    ask.textContent = 'Delete this file now? This cannot be undone.';
+
+                    const btns = document.createElement('div');
+                    btns.className = 'flex gap-2 shrink-0';
+
+                    const yes = document.createElement('button');
+                    yes.className = 'text-[10px] bg-red-700 hover:bg-red-600 px-2 py-1 rounded text-white font-bold transition-colors';
+                    yes.textContent = 'DELETE NOW';
+
+                    const no = document.createElement('button');
+                    no.className = 'text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white transition-colors';
+                    no.textContent = 'CANCEL';
+
+                    btns.append(yes, no);
+                    panel.append(ask, btns);
+
+                    const togglePanel = () => {
+                        panel.classList.toggle('hidden');
+                    };
+                    delBtn.addEventListener('click', togglePanel);
+                    no.addEventListener('click', togglePanel);
+                    yes.addEventListener('click', async () => {
+                        yes.disabled = true;
+                        try {
+                            const r = await fetch(item.deleteUrl, { method: 'DELETE' });
+                            // 404 = already deleted or expired - nothing left to delete either way
+                            if (r.ok || r.status === 404) {
+                                removeFromHistory(item.timestamp, item.url);
+                                return;
+                            }
+                            ask.textContent = 'Delete failed (' + r.status + '). Try again.';
+                        } catch (err) {
+                            console.error('Delete failed:', err);
+                            ask.textContent = 'Network error. Try again.';
+                        }
+                        yes.disabled = false;
+                    });
+
+                    right.append(delBtn);
+                }
+                const top = document.createElement('div');
+                top.className = 'flex items-center justify-between w-full';
+                top.append(textWrap, right);
+                row.append(top);
+                if (panel) row.append(panel);
                 return row;
             }));
+        }
+
+        function removeFromHistory(timestamp, url) {
+            const history = JSON.parse(localStorage.getItem('suncdn_history') || '[]');
+            localStorage.setItem('suncdn_history', JSON.stringify(
+                history.filter(h => !(h.timestamp === timestamp && h.url === url))));
+            renderHistory();
         }
 
         function clearHistory() {
